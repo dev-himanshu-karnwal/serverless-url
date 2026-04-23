@@ -1,5 +1,10 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({ region: "ap-south-1" });
 const docClient = DynamoDBDocumentClient.from(client);
@@ -58,7 +63,6 @@ export const shortenUrl = async (event) => {
   }
 };
 
-
 export const redirectToOriginalUrl = async (event) => {
   const { shortUrl } = event.pathParameters;
 
@@ -89,10 +93,32 @@ export const redirectToOriginalUrl = async (event) => {
     };
   }
 
+  const { Attributes } = await docClient.send(
+    new UpdateCommand({
+      TableName: "url-shortener",
+      Key: { id: shortUrl },
+      UpdateExpression: "SET clicks = clicks + :inc",
+      ExpressionAttributeValues: { ":inc": 1 },
+      ReturnValues: "ALL_NEW",
+    }),
+  );
+
+  if (!Attributes) {
+    return {
+      statusCode: 404,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ error: "Could not update short URL" }),
+    };
+  }
+
+  console.log("Attributes", Attributes);
+
   return {
     statusCode: 302,
     headers: {
-      Location: Item.originalUrl,
+      Location: Attributes.originalUrl,
     },
   };
 };
