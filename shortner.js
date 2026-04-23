@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({ region: "ap-south-1" });
 const docClient = DynamoDBDocumentClient.from(client);
@@ -56,4 +56,43 @@ export const shortenUrl = async (event) => {
       body: JSON.stringify({ error: "Could not create short URL" }),
     };
   }
+};
+
+
+export const redirectToOriginalUrl = async (event) => {
+  const { shortUrl } = event.pathParameters;
+
+  if (!shortUrl) {
+    return {
+      statusCode: 400,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ error: "Short URL is required" }),
+    };
+  }
+
+  const { Item } = await docClient.send(
+    new GetCommand({
+      TableName: "url-shortener",
+      Key: { id: shortUrl },
+    }),
+  );
+
+  if (!Item) {
+    return {
+      statusCode: 404,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ error: "Short URL not found" }),
+    };
+  }
+
+  return {
+    statusCode: 302,
+    headers: {
+      Location: Item.originalUrl,
+    },
+  };
 };

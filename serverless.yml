@@ -43,6 +43,13 @@ functions:
           path: /shorten
           method: post
 
+  redirectToOriginalUrl:
+    handler: shortner.redirectToOriginalUrl
+    events:
+      - httpApi:
+          path: /{shortUrl}
+          method: get
+
 resources:
   Resources:
     ShortUrlTable:
