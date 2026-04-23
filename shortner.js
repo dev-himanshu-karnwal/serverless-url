@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({ region: "ap-south-1" });
 const docClient = DynamoDBDocumentClient.from(client);
@@ -8,7 +8,7 @@ function generateShortUrl() {
   return Math.random().toString(36).substring(2, 8).toLowerCase();
 }
 
-exports.shortenUrl = async (event) => {
+export const shortenUrl = async (event) => {
   const { url } = JSON.parse(event.body);
 
   if (!url) {
@@ -41,12 +41,18 @@ exports.shortenUrl = async (event) => {
       body: JSON.stringify({
         shortUrl,
       }),
+      headers: {
+        "Content-Type": "application/json",
+      },
     };
   } catch (err) {
     console.error(err);
 
     return {
       statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ error: "Could not create short URL" }),
     };
   }
