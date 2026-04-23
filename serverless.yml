@@ -1,0 +1,61 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: dcttechnology
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: serverless-shortner
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-south-1
+  iam:
+    role:
+      statements:
+        # Runtime access (Lambda)
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+          Resource:
+            - arn:aws:dynamodb:ap-south-1:*:table/url-shortener
+
+        # Deployment access (CloudFormation)
+        - Effect: Allow
+          Action:
+            - dynamodb:CreateTable
+            - dynamodb:DescribeTable
+            - dynamodb:DeleteTable
+          Resource:
+            - "*"
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /
+          method: get
+
+  shortenUrl:
+    handler: shortner.shortenUrl
+    events:
+      - httpApi:
+          path: /shorten
+          method: post
+
+resources:
+  Resources:
+    ShortUrlTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: url-shortener
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: expiresAt
+          Enabled: true
