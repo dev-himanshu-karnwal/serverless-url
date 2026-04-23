@@ -29,7 +29,7 @@ export const shortenUrl = async (event) => {
     id: shortUrl,
     originalUrl: url,
     createdAt: Date.now(),
-    expiresAt: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days TTL
+    expiresAt: Math.floor(Date.now() / 1000) + 60, // 1 minute TTL
     clicks: 0,
   };
 
@@ -83,7 +83,7 @@ export const redirectToOriginalUrl = async (event) => {
     }),
   );
 
-  if (!Item) {
+  if (!Item || Item.expiresAt < Date.now() / 1000) {
     return {
       statusCode: 404,
       headers: {
